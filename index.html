@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Automation Assistant · 让 AI 帮你操作电脑</title>
+<meta name="description" content="基于视觉大模型的桌面自动化助手，让 AI 看懂屏幕、自动操作你的电脑。支持通义千问、智谱 GLM 等模型。">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg: #0a0b0d;
+    --bg-2: #121316;
+    --card: #18191d;
+    --card-hover: #1e1f24;
+    --border: #26272c;
+    --text: #e8e8e8;
+    --text-dim: #8a8d94;
+    --text-faint: #555;
+    --primary: #4a9eff;
+    --primary-hover: #5aabff;
+    --primary-dim: rgba(74, 158, 255, 0.1);
+    --green: #6ccb5f;
+    --purple: #b088e0;
+    --radius: 14px;
+    --max-w: 1100px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-hover); }
+
+.container {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* ========== 导航栏 ========== */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(10, 11, 13, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+nav .container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+nav .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+nav .logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), #2e7dd1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+nav .links {
+    margin-left: auto;
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
+nav .links a {
+    color: var(--text-dim);
+    font-size: 14px;
+    transition: color 0.15s;
+}
+
+nav .links a:hover { color: var(--text); }
+
+nav .github-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+nav .github-btn:hover {
+    background: var(--card-hover);
+    border-color: var(--primary);
+    color: var(--text);
+}
+
+nav .github-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* ========== Hero 区 ========== */
+.hero {
+    padding: 160px 0 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(74, 158, 255, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.hero .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--primary-dim);
+    border: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--primary);
+    margin-bottom: 24px;
+}
+
+.hero .badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 20px;
+}
+
+.hero h1 .gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, #b088e0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero .subtitle {
+    font-size: clamp(15px, 2vw, 18px);
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+}
+
+.hero .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
+}
+
+.btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--card-hover);
+    border-color: var(--primary);
+    color: var(--text);
+}
+
+.btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+/* ========== 功能特性 ========== */
+.section {
+    padding: 80px 0;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-title .eyebrow {
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.section-title h2 {
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+}
+
+.section-title p {
+    color: var(--text-dim);
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.feature {
+    padding: 28px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: all 0.2s;
+}
+
+.feature:hover {
+    background: var(--card-hover);
+    border-color: rgba(74, 158, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.feature .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--primary-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    font-size: 20px;
+}
+
+.feature h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.feature p {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.65;
+}
+
+/* ========== 截图 / 演示 ========== */
+.demo {
+    background: var(--bg-2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.demo-window {
+    background: #1a1b1e;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.demo-titlebar {
+    height: 36px;
+    background: #141518;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.demo-titlebar .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #35363a;
+}
+
+.demo-titlebar .dot.red { background: #ff5f57; }
+.demo-titlebar .dot.yellow { background: #febc2e; }
+.demo-titlebar .dot.green { background: #28c840; }
+
+.demo-titlebar .title {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.demo-body {
+    display: grid;
+    grid-template-columns: 200px 1fr 280px;
+    height: 380px;
+}
+
+.demo-sidebar {
+    background: #141518;
+    border-right: 1px solid var(--border);
+    padding: 12px;
+}
+
+.demo-sidebar .item {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+
+.demo-sidebar .item.active {
+    background: #2a2b2e;
+    color: var(--text);
+}
+
+.demo-chat {
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.demo-msg {
+    display: flex;
+    gap: 10px;
+    max-width: 85%;
+}
+
+.demo-msg.user { margin-left: auto; flex-direction: row-reverse; }
+
+.demo-msg .avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.demo-msg.user .avatar { background: linear-gradient(135deg, #4a9eff, #2e7dd1); }
+.demo-msg.ai .avatar { background: linear-gradient(135deg, #6ccb5f, #4aa84a); }
+
+.demo-msg .bubble {
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.demo-msg.user .bubble {
+    background: #2a5d9e;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.demo-msg.ai .bubble {
+    background: #24252a;
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+
+.demo-log {
+    background: #0d0e10;
+    border-left: 1px solid var(--border);
+    padding: 12px;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: #8a8d94;
+    overflow: hidden;
+}
+
+.demo-log .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-log .line .ts { color: #444; margin-right: 6px; }
+.demo-log .line.exec { color: var(--primary); }
+.demo-log .line.ai { color: var(--purple); }
+.demo-log .line.success { color: var(--green); }
+
+/* ========== 快速开始 ========== */
+.steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.step {
+    padding: 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative;
+}
+
+.step .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 14px;
+}
+
+.step h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.step p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+.step code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--primary);
+}
+
+/* ========== 页脚 ========== */
+footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+}
+
+footer a {
+    color: var(--text-dim);
+}
+
+footer a:hover {
+    color: var(--text);
+}
+
+footer .links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 768px) {
+    nav .links a:not(.github-btn) { display: none; }
+
+    .hero { padding: 120px 0 60px; }
+
+    .section { padding: 60px 0; }
+
+    .demo-body {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .demo-sidebar,
+    .demo-log { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== 导航 ========== -->
+<nav>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">AI</div>
+            <span>AI Automation Assistant</span>
+        </div>
+        <div class="links">
+            <a href="#features">功能</a>
+            <a href="#demo">演示</a>
+            <a href="#quickstart">快速开始</a>
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant" class="github-btn" target="_blank">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ========== Hero ========== -->
+<section class="hero">
+    <div class="container">
+        <div class="badge">
+            <span class="dot"></span>
+            <span>支持通义千问 · 智谱 GLM · OpenAI</span>
+        </div>
+        <h1>
+            让 AI 看懂屏幕<br>
+            <span class="gradient">自动操作你的电脑</span>
+        </h1>
+        <p class="subtitle">
+            基于视觉大模型的桌面自动化助手。截图给 AI，它替你点鼠标、敲键盘、创建文件 —— 就像一位坐在你电脑前的助手。
+        </p>
+        <div class="actions">
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant/releases" class="btn btn-primary" target="_blank">
+                <svg viewBox="0 0 16 16"><path d="M7.5 0L2 5.5l1.4 1.4L6.5 3.8V16h2V3.8l3.1 3.1L13 5.5 7.5 0z" transform="rotate(90 8 8)"/></svg>
+                下载最新版
+            </a>
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant" class="btn btn-secondary" target="_blank">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                查看源码
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ========== 功能特性 ========== -->
+<section class="section" id="features">
+    <div class="container">
+        <div class="section-title">
+            <div class="eyebrow">Features</div>
+            <h2>能干活的 AI 助手</h2>
+            <p>不是聊天机器人，而是能真正操作你电脑的 AI。</p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="icon">👁</div>
+                <h3>视觉识别</h3>
+                <p>截图给 AI 看，它就能"看到"你的屏幕，找到按钮、输入框、菜单项，精准点击。</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🖱</div>
+                <h3>模拟操作</h3>
+                <p>鼠标点击、双击、右键、拖拽、键盘输入、快捷键 —— 完全模拟真人操作。</p>
+            </div>
+            <div class="feature">
+                <div class="icon">📄</div>
+                <h3>创建文档</h3>
+                <p>一句话创建 Excel 表格、Word 文档，自动填好数据，直接保存到桌面。</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🌐</div>
+                <h3>网页操作</h3>
+                <p>打开浏览器、搜索内容、下载文件，全流程自动完成。</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🔧</div>
+                <h3>系统控制</h3>
+                <p>打开设置、注册表、任务管理器、控制面板，一切系统工具随叫随到。</p>
+            </div>
+            <div class="feature">
+                <div class="icon">💬</div>
+                <h3>聊天问答</h3>
+                <p>不只是执行任务，也能回答问题、翻译、写代码、解释概念。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== 演示 ========== -->
+<section class="section" id="demo" style="background: var(--bg-2);">
+    <div class="container">
+        <div class="section-title">
+            <div class="eyebrow">Preview</div>
+            <h2>界面预览</h2>
+            <p>聊天式界面 + 实时日志 + 右侧控制中心</p>
+        </div>
+
+        <div class="demo">
+            <div class="demo-window">
+                <div class="demo-titlebar">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                    <span class="title">AI Automation Assistant</span>
+                </div>
+                <div class="demo-body">
+                    <div class="demo-sidebar">
+                        <div class="item active">打开浏览器搜索 python</div>
+                        <div class="item">创建 excel 报表</div>
+                        <div class="item">打开注册表</div>
+                        <div class="item">什么是 python</div>
+                    </div>
+                    <div class="demo-chat">
+                        <div class="demo-msg user">
+                            <div class="avatar">你</div>
+                            <div class="bubble">创建一个 excel 文件，内容有姓名和年龄</div>
+                        </div>
+                        <div class="demo-msg ai">
+                            <div class="avatar">AI</div>
+                            <div class="bubble">✓ 任务完成</div>
+                        </div>
+                        <div class="demo-msg user">
+                            <div class="avatar">你</div>
+                            <div class="bubble">什么是 Python？</div>
+                        </div>
+                        <div class="demo-msg ai">
+                            <div class="avatar">AI</div>
+                            <div class="bubble">Python 是一种广泛使用的高级编程语言，以简洁易读著称，广泛应用于数据科学、Web 开发、自动化脚本等领域。</div>
+                        </div>
+                    </div>
+                    <div class="demo-log">
+                        <div class="line"><span class="ts">00:39:41</span>[INFO] Task: 创建 excel</div>
+                        <div class="line ai"><span class="ts">00:39:42</span>[AI] CREATEEXCEL:report...</div>
+                        <div class="line exec"><span class="ts">00:39:42</span>[EXEC] Creating Excel...</div>
+                        <div class="line success"><span class="ts">00:39:43</span>[OFFICE] Excel created OK</div>
+                        <div class="line"><span class="ts">00:39:43</span>[INFO] Task done</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== 快速开始 ========== -->
+<section class="section" id="quickstart">
+    <div class="container">
+        <div class="section-title">
+            <div class="eyebrow">Get Started</div>
+            <h2>三步开始使用</h2>
+            <p>不用编译，不用配置环境，下载就能用。</p>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="num">1</div>
+                <h4>下载安装包</h4>
+                <p>去 <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant/releases" target="_blank">Releases</a> 下载最新的 <code>.zip</code>，解压到任意目录。</p>
+            </div>
+            <div class="step">
+                <div class="num">2</div>
+                <h4>填入 API Key</h4>
+                <p>双击 <code>Project4.exe</code>，点击右上角设置，填入你的通义千问或智谱 API Key。</p>
+            </div>
+            <div class="step">
+                <div class="num">3</div>
+                <h4>开始使用</h4>
+                <p>在输入框里描述你想做的事，比如"打开浏览器搜索 Python"，剩下的交给 AI。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== 页脚 ========== -->
+<footer>
+    <div class="container">
+        <div class="links">
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant" target="_blank">GitHub</a>
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant/releases" target="_blank">下载</a>
+            <a href="https://github.com/YOUR_USERNAME/ai-automation-assistant/issues" target="_blank">反馈</a>
+        </div>
+        <div>MIT License · Made with ❤️ for automation</div>
+    </div>
+</footer>
+
+</body>
+</html>
